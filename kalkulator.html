@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kalkulator Web (DIKOREKSI)</title>
+
+    <style>
+        /* --- CSS Kalkulator --- */
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-color: #f0f0f0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+        }
+
+        .kalkulator {
+            background-color: #333;
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.4);
+            width: 320px;
+        }
+
+        .tampilan-kalkulator {
+            width: 100%;
+            height: 65px;
+            margin-bottom: 20px;
+            padding: 10px;
+            font-size: 2.2em; 
+            text-align: right;
+            border: none;
+            border-radius: 8px;
+            background-color: #eee;
+            color: #333;
+            box-sizing: border-box; 
+            overflow-x: auto; 
+        }
+
+        .tombol {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+        }
+
+        button {
+            padding: 20px 0; 
+            font-size: 1.3em;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            background-color: #555;
+            color: white;
+            transition: background-color 0.15s ease-in-out, transform 0.05s;
+            box-shadow: 0 3px 5px rgba(0, 0, 0, 0.2);
+        }
+        
+        button:active {
+            transform: scale(0.98);
+        }
+
+        .operator {
+            background-color: #ff9500; 
+        }
+
+        .operator:hover {
+            background-color: #e08b00;
+        }
+
+        .clear {
+            background-color: #a5a5a5; 
+            color: #333;
+        }
+        .clear:hover {
+            background-color: #8f8f8f;
+        }
+
+        .sama-dengan {
+            background-color: #4CAF50; 
+            /* Catatan: Diperbaiki agar = menggunakan 1 kolom, dan 0 menggunakan 2 kolom */
+        }
+
+        .sama-dengan:hover {
+            background-color: #409544;
+        }
+
+        .nol {
+            grid-column: span 2; 
+        }
+    </style>
+</head>
+<body>
+
+    <div class="kalkulator">
+        <input type="text" class="tampilan-kalkulator" id="tampilan" disabled value="0">
+
+        <div class="tombol">
+            <button class="clear" onclick="clearTampilan()">AC</button>
+            <button class="operator" onclick="hapusTerakhir()">DEL</button>
+            <button class="operator" onclick="inputNilai('/')">/</button>
+            <button class="operator" onclick="inputNilai('*')">x</button>
+
+            <button onclick="inputNilai('7')">7</button>
+            <button onclick="inputNilai('8')">8</button>
+            <button onclick="inputNilai('9')">9</button>
+            <button class="operator" onclick="inputNilai('-')">-</button>
+
+            <button onclick="inputNilai('4')">4</button>
+            <button onclick="inputNilai('5')">5</button>
+            <button onclick="inputNilai('6')">6</button>
+            <button class="operator" onclick="inputNilai('+')">+</button>
+
+            <button onclick="inputNilai('1')">1</button>
+            <button onclick="inputNilai('2')">2</button>
+            <button onclick="inputNilai('3')">3</button>
+            <button class="operator sama-dengan" onclick="hitung()">=</button>
+
+            <button class="nol" onclick="inputNilai('0')">0</button>
+            <button onclick="inputNilai('.')">.</button>
+
+        </div>
+    </div>
+
+    <script>
+        const tampilan = document.getElementById('tampilan');
+
+        function isOperator(char) {
+            return ['+', '-', '*', '/'].includes(char);
+        }
+
+        function inputNilai(nilai) {
+            let currentValue = tampilan.value;
+            const lastChar = currentValue.slice(-1);
+            
+            if ((currentValue !== '0' && isNaN(lastChar) && !isOperator(lastChar)) || currentValue === 'Error' || currentValue === 'Infinity') {
+                if (!isOperator(nilai)) {
+                     tampilan.value = '';
+                     currentValue = '';
+                }
+            }
+
+            if (currentValue === '0' && nilai !== '.') {
+                tampilan.value = '';
+                currentValue = '';
+            }
+
+            if (currentValue.length >= 20) {
+                return;
+            }
+
+            if (nilai === '.') {
+                const parts = currentValue.split(/[\+\-\*\/]/).pop();
+                if (parts.includes('.')) {
+                    return;
+                }
+                if (currentValue === '' || isOperator(lastChar)) {
+                    tampilan.value += '0';
+                }
+            }
+
+            if (isOperator(nilai)) {
+                if (isOperator(lastChar)) {
+                    if (currentValue === '' && nilai !== '-') {
+                        return;
+                    }
+
+                    if (nilai === '-' && lastChar !== '-') {
+                         // Izinkan negatif
+                    } else if (lastChar !== '-') {
+                        tampilan.value = currentValue.slice(0, -1) + nilai;
+                        return;
+                    } else if (lastChar === '-') {
+                         return; // Mencegah 5*--
+                    }
+                }
+            }
+            
+            tampilan.value += nilai;
+        }
+
+        function clearTampilan() {
+            tampilan.value = '0';
+        }
+
+        function hitung() {
+            let expression = tampilan.value;
+            
+            while (isOperator(expression.slice(-1))) {
+                expression = expression.slice(0, -1);
+            }
+
+            if (!expression || expression === 'Error') return;
+
+            try {
+                const calculatorFunction = new Function('return ' + expression);
+                let hasil = calculatorFunction();
+
+                if (!isFinite(hasil)) {
+                    tampilan.value = 'Infinity';
+                } else if (isNaN(hasil)) {
+                    tampilan.value = 'Error';
+                } else {
+                    tampilan.value = parseFloat(hasil.toFixed(10)).toString();
+                }
+                
+            } catch (error) {
+                tampilan.value = 'Error';
+            }
+        }
+
+        function hapusTerakhir() {
+            let currentValue = tampilan.value;
+            if (currentValue === 'Error' || currentValue === 'Infinity') {
+                 tampilan.value = '0';
+                 return;
+            }
+            
+            tampilan.value = currentValue.slice(0, -1);
+
+            if (tampilan.value === '') {
+                tampilan.value = '0';
+            }
+        }
+        
+        clearTampilan();
+    </script>
+</body>
+</html>
